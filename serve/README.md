@@ -1,1 +1,0 @@
-# down-syndrome-ai-web
