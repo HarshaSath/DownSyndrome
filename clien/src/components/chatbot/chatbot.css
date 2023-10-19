@@ -1,0 +1,14 @@
+.chatbot_main_container{
+    z-index: 1090 !important;
+}
+
+.rcw-launcher {
+    background-color: #00b073;
+    color: #fff;
+    border-radius: 50%;
+    padding: 10px;
+}
+
+.rcw-launcher:hover {
+    background-color: #69b99d;
+}

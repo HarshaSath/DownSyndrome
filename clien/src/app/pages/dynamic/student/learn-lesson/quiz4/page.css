@@ -1,0 +1,5 @@
+.card:hover {
+    background-color: #057ef8; /* Change this color to your desired hover color */
+    transition: background-color 0.3s ease-in-out;
+  }
+  
