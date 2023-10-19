@@ -1,16 +1,19 @@
-"use client"
+'use client'
 import './page.css'
-import Swal from 'sweetalert2';
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import ChatWidget from "../components/global_comp/chat_widget/chat_widget";
 import Navbar from '../components/global_comp/navbar/navbar';
 import Footer from '../components/global_comp/footer/footer';
 
+import Swal from 'sweetalert2';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import ChatBot from '../components/chatbot/chatbot';
 export default function Home() {
 
   const [content, setContent] = useState("");
-  const [retrived_content, setRContent] = useState("");
+  const [diagnosis, setDiagnosis] = useState("");
+  const [percentage, setPercentage] = useState("");
+  const [symptoms, setSymptoms] = useState([]);
+  const [displayDataReceived, setDisplayDataReceived] = useState(false);
 
   useEffect(() => {
     function reveal() {
@@ -36,62 +39,74 @@ export default function Home() {
     };
   }, []);
 
-  const handleChange = (e) =>{
-      setContent(e.target.value);
+  const handleChange = (e) => {
+    setContent(e.target.value);
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     if (!content) {
       Swal.fire({
-        title: 'No Description',
-        text: 'Please provide a description about the patient before submitting.',
-        icon: 'warning',
-        confirmButtonText: 'OK',
+        title: "No Description",
+        text: "Please provide a description about the patient before submitting.",
+        icon: "warning",
+        confirmButtonText: "OK",
       });
       return;
     }
-  
+
     const processingPopup = Swal.fire({
-      title: 'Processing...',
+      title: "Processing...",
       html: 'Please wait while the data is being processed.<br><div class="spinner-border" role="status"></div>',
       allowOutsideClick: false,
       showCancelButton: false,
       showConfirmButton: false,
     });
-  
-    try {
-      // Send the 'content' to the backend
-      const response = await axios.post('http://127.0.0.1:5000/ner_predict', { text: content });
-      console.log("Successfully Sent to backend");
-      const processedData = response.data;
-      
-      setRContent(processedData);
-  
-      setTimeout(() => {
+
+    setTimeout(async () => {
+      try {
+        // Send the 'content' to the backend
+        const response = await axios.post("http://127.0.0.1:5000/ner_predict", { text: content });
+        console.log(response.data.isDownSyndromeDetected);
+        console.log(response.data.totalPercentage);
+        console.log(response.data.textUsedForDiagnosis);
+
+        if (response.data.isDownSyndromeDetected) {
+          setDiagnosis("detected");
+        } else {
+          setDiagnosis("not detected");
+        }
+
+        setPercentage(response.data.totalPercentage);
+        setSymptoms(response.data.textUsedForDiagnosis);
+        setDisplayDataReceived(true); // Set the flag to true when data is received
+
         Swal.fire({
-          title: 'Processing Complete',
-          html: 'The data has been processed successfully.',
-          icon: 'success',
+          title: "Processing Complete",
+          html: "The data has been processed successfully.",
+          icon: "success",
           showConfirmButton: true,
         });
-      }, 2000); 
-    } catch (error) {
-      console.log('Error:', error);
-      Swal.fire({
-        title: 'Processing Failed',
-        html: 'Something Went Wrong',
-        icon: 'error',
-        showConfirmButton: true,
-      });
-    }
-  };
-  
+      } catch (error) {
+        console.log("Error:", error);
+        Swal.fire({
+          title: "Processing Failed",
+          html: "Something Went Wrong",
+          icon: "error",
+          showConfirmButton: true,
+        });
+      }
+    }, 1000);
+  }
+
   const handleClear = () => {
     setContent("");
+    setDiagnosis("");
+    setPercentage("");
+    setSymptoms([]);
+    setDisplayDataReceived(false);
   };
-  
 
   const nav_links = [
     { name: "Home", href: "#home" },
@@ -106,12 +121,12 @@ export default function Home() {
         logolink="#home"
         links={nav_links}
       />
-      <ChatWidget />
+      <ChatBot/>
       <div id='home' className="hero">
         <div className="hero_text col-8">
           <p>
             <span className='display-1 fw-bold'><span className='cus_color'>Hello</span> User!</span>  <br /><br />
-            <span className='display-5 fw-normal'>Welcome to <br/> <span className='cus_color'>FindDownSyndrome.com</span></span> <br />
+            <span className='display-5 fw-normal'>Welcome to <br /> <span className='cus_color'>FindDownSyndrome.com</span></span> <br />
           </p>
           <p className='fs-5 col-xl-6 col-7'>
             Using artificial intelligence, we can diagnose any down syndrome symptoms of your loved one's.
@@ -187,14 +202,15 @@ export default function Home() {
       </section>
 
       <div id='get_started' className='ai_section reveal'>
-        <section className='m-2'>
+        <section className='m-2 pt-5 pb-5'>
           <div className="container reveal">
             <div className="row m-0 text-center justify-content-center">
 
-            <span className='display-3 fw-bold mb-5'>Lets Get <span className='cus_color'>Started!</span> </span> <br />
+              <span className='display-3 fw-bold mb-5'>Lets Get <span className='cus_color'>Started!</span> </span> <br />
 
               <div className="col-xl-6 col-lg-6 col-md-7 col-sm-8 col-12 form_container p-4 rounded-4 shadow">
-                <p className='fs-4'>Enter a description about your patient's behaviour</p>
+                <p className='fs-5 fw-bold'>Enter a little description about your patient's behaviour</p>
+                <p className='text-start'>Include about his/her regular behaviours, different body features, facial features, anxiety, depression etc.</p>
 
                 <form onSubmit={handleSubmit}>
                   <div className="container-flex d-flex">
@@ -203,15 +219,42 @@ export default function Home() {
                         <textarea className="form-control mb-3 rounded-4 shadow" id="floatingTextarea" onChange={handleChange} value={content}
                           style={{ maxHeight: "150px", minHeight: "150px", backgroundColor: "transparent", color: "white" }}>
                         </textarea>
-                        <textarea className="form-control mb-2 rounded-4 shadow " id="floatingTextarea" disabled value={retrived_content}
-                          style={{ maxHeight: "150px", minHeight: "150px", backgroundColor: "transparent", color: "white" }}>
 
-                        </textarea>
+                        {/* Display section */}
+                        {displayDataReceived && (
+                          <div
+                            className="container mb-3 rounded-4 p-3 --bs-bg-opacity: .5 shadow text-start"
+                            style={{
+                              backgroundColor: "transparent",
+                            }}
+                          >
+                            <p className='fw-bold'>
+                              According to our analysis, your patient have <span className='fw-bolder text-danger'>{diagnosis}</span> having Down Syndrome.<br />
+                              The analysis detects the patient has <span className='fw-bolder text-danger'>{percentage}%</span> chance of having Down Syndrome based on the symptoms
+                              you provided above.<br />
+                              The <span className='fw-bolder text-danger'>symptoms</span> are:
+                              <ul>
+                                {symptoms.map((symptom, index) => (
+                                  <li key={index}>{symptom}</li>
+                                ))}
+                              </ul>
+                            </p>
+                          </div>
+                        )}
+
                       </div>
 
                       <div className="col text-end">
-                        <button type='reset' onClick={handleClear} className="btn col-3 clear_btn  m-1 rounded-3">Clear</button>
-                        <button type='submit' className="btn col-3 submit_btn rounded-3">Submit</button>
+                        <button
+                          type="reset"
+                          onClick={handleClear}
+                          className="btn col-3 clear_btn  m-1 rounded-3"
+                        >
+                          Clear
+                        </button>
+                        <button type="submit" className="btn col-3 submit_btn rounded-3">
+                          Submit
+                        </button>
                       </div>
 
                     </div>
@@ -251,7 +294,7 @@ export default function Home() {
 
 
       </section>
-
+     
       <div id='contact'>
         <Footer />
       </div>
